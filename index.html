@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🧠 Second Brain</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #0f0f0f;
+            color: #e0e0e0;
+            min-height: 100vh;
+        }
+        .container { max-width: 900px; margin: 0 auto; padding: 2rem; }
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid #333;
+        }
+        h1 { font-size: 1.8rem; display: flex; align-items: center; gap: 0.5rem; }
+        .search-box {
+            width: 100%;
+            padding: 1rem;
+            background: #1a1a1a;
+            border: 1px solid #333;
+            border-radius: 8px;
+            color: #e0e0e0;
+            font-size: 1rem;
+            margin-bottom: 1.5rem;
+        }
+        .search-box:focus { outline: none; border-color: #6366f1; }
+        .tags { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 2rem; }
+        .tag {
+            padding: 0.4rem 0.8rem;
+            background: #1a1a1a;
+            border: 1px solid #333;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            transition: all 0.2s;
+        }
+        .tag:hover, .tag.active { background: #6366f1; border-color: #6366f1; }
+        .notes { display: grid; gap: 1rem; }
+        .note {
+            background: #1a1a1a;
+            border: 1px solid #333;
+            border-radius: 12px;
+            padding: 1.5rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .note:hover { border-color: #6366f1; transform: translateY(-2px); }
+        .note-title { font-size: 1.1rem; font-weight: 600; margin-bottom: 0.5rem; }
+        .note-preview { color: #888; font-size: 0.9rem; line-height: 1.5; }
+        .note-meta { display: flex; gap: 0.5rem; margin-top: 1rem; }
+        .note-tag { font-size: 0.75rem; color: #6366f1; }
+        .note-date { font-size: 0.75rem; color: #666; }
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.8);
+            padding: 2rem;
+            overflow-y: auto;
+        }
+        .modal.active { display: flex; justify-content: center; }
+        .modal-content {
+            background: #1a1a1a;
+            border: 1px solid #333;
+            border-radius: 16px;
+            padding: 2rem;
+            max-width: 700px;
+            width: 100%;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+        .modal-title { font-size: 1.5rem; margin-bottom: 1rem; }
+        .modal-body { line-height: 1.8; color: #ccc; white-space: pre-wrap; }
+        .modal-close {
+            background: #333; border: none; color: #fff;
+            padding: 0.5rem 1rem; border-radius: 6px;
+            cursor: pointer; margin-top: 1rem;
+        }
+        .empty-state { text-align: center; padding: 3rem; color: #666; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🧠 Second Brain</h1>
+        </header>
+        
+        <input type="text" class="search-box" placeholder="🔍 Search notes..." id="search">
+        
+        <div class="tags" id="tags"></div>
+        
+        <div class="notes" id="notes"></div>
+    </div>
+
+    <div class="modal" id="modal">
+        <div class="modal-content">
+            <h2 class="modal-title" id="modalTitle"></h2>
+            <div class="modal-body" id="modalBody"></div>
+            <button class="modal-close" onclick="closeModal()">Close</button>
+        </div>
+    </div>
+
+    <script>
+        const notes = [
+            {
+                id: 1,
+                title: "Welcome to Your Second Brain",
+                content: "This is your personal knowledge management system.\n\nUse it to:\n• Capture ideas and insights\n• Organize your thoughts with tags\n• Build a network of connected ideas\n\nStart adding your own notes!",
+                tags: ["welcome", "guide"],
+                date: "2026-02-17"
+            },
+            {
+                id: 2,
+                title: "Quick Capture",
+                content: "Capture thoughts quickly:\n• Ideas\n• Meeting notes\n• Reading notes\n• Daily reflections",
+                tags: ["productivity", "workflow"],
+                date: "2026-02-16"
+            },
+            {
+                id: 3,
+                title: "Tagging System",
+                content: "Tags help you organize and find related notes.\n\nBest practices:\n• Use consistent naming\n• Keep it simple (1-3 words)\n• Create tag hierarchies when needed",
+                tags: ["organization", "tips"],
+                date: "2026-02-15"
+            },
+            {
+                id: 4,
+                title: "Building a Second Brain",
+                content: "The PARA method:\n\n📁 Projects - Short-term work\n📂 Areas - Ongoing responsibilities\n📚 Resources - Interesting topics\n🗃️ Archives - Inactive items\n\nFocus on actionability and evolution.",
+                tags: ["productivity", "methodology"],
+                date: "2026-02-14"
+            },
+            {
+                id: 5,
+                title: "Note-Taking Best Practices",
+                content: "1. Write concisely\n2. Use your own words\n3. Connect related ideas\n4. Review regularly\n5. Iterate and improve",
+                tags: ["tips", "productivity"],
+2026-02                date: "-13"
+            }
+        ];
+
+        let activeTag = null;
+        let searchQuery = '';
+
+        function getAllTags() {
+            const tags = new Set();
+            notes.forEach(n => n.tags.forEach(t => tags.add(t)));
+            return Array.from(tags).sort();
+        }
+
+        function renderTags() {
+            const tagsEl = document.getElementById('tags');
+            const allTags = getAllTags();
+            tagsEl.innerHTML = `
+                <div class="tag ${!activeTag ? 'active' : ''}" onclick="filterByTag(null)">All</div>
+                ${allTags.map(t => `
+                    <div class="tag ${activeTag === t ? 'active' : ''}" onclick="filterByTag('${t}')">#${t}</div>
+                `).join('')}
+            `;
+        }
+
+        function filterByTag(tag) {
+            activeTag = tag;
+            renderTags();
+            renderNotes();
+        }
+
+        function getFilteredNotes() {
+            return notes.filter(n => {
+                const matchesTag = !activeTag || n.tags.includes(activeTag);
+                const matchesSearch = !searchQuery || 
+                    n.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                    n.content.toLowerCase().includes(searchQuery.toLowerCase());
+                return matchesTag && matchesSearch;
+            });
+        }
+
+        function renderNotes() {
+            const notesEl = document.getElementById('notes');
+            const filtered = getFilteredNotes();
+            
+            if (filtered.length === 0) {
+                notesEl.innerHTML = '<div class="empty-state">No notes found</div>';
+                return;
+            }
+
+            notesEl.innerHTML = filtered.map(n => `
+                <div class="note" onclick="openNote(${n.id})">
+                    <div class="note-title">${n.title}</div>
+                    <div class="note-preview">${n.content.substring(0, 150)}...</div>
+                    <div class="note-meta">
+                        ${n.tags.map(t => `<span class="note-tag">#${t}</span>`).join('')}
+                        <span class="note-date">${n.date}</span>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function openNote(id) {
+            const note = notes.find(n => n.id === id);
+            document.getElementById('modalTitle').textContent = note.title;
+            document.getElementById('modalBody').textContent = note.content;
+            document.getElementById('modal').classList.add('active');
+        }
+
+        function closeModal() {
+            document.getElementById('modal').classList.remove('active');
+        }
+
+        document.getElementById('search').addEventListener('input', (e) => {
+            searchQuery = e.target.value;
+            renderNotes();
+        });
+
+        document.getElementById('modal').addEventListener('click', (e) => {
+            if (e.target.id === 'modal') closeModal();
+        });
+
+        renderTags();
+        renderNotes();
+    </script>
+</body>
+</html>
