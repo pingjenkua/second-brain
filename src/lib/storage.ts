@@ -34,7 +34,8 @@ export interface Task {
   updatedat: string;
 }
 
-const USE_SUPABASE = !!process.env.NEXT_PUBLIC_SUPABASE_URL;
+// Use Supabase only if client is initialized (env vars present)
+const USE_SUPABASE = !!supabase;
 
 function ensureDataDir() {
   if (!fs.existsSync(DATA_DIR)) {
@@ -61,15 +62,14 @@ function writeJSONLocal<T>(filename: string, data: T): void {
   fs.writeFileSync(filepath, JSON.stringify(data, null, 2));
 }
 
-// Supabase table names
 const MEMORIES_TABLE = 'memories';
 const DOCUMENTS_TABLE = 'documents';
 const TASKS_TABLE = 'tasks';
 
 // Memories
 export async function getMemories(): Promise<Memory[]> {
-  if (USE_SUPABASE) {
-    const { data, error } = await supabase.from(MEMORIES_TABLE).select('*').order('createdAt', { ascending: false });
+  if (USE_SUPABASE && supabase) {
+    const { data, error } = await supabase.from(MEMORIES_TABLE).select('*').order('createdat', { ascending: false });
     if (error) {
       console.error('Supabase error fetching memories:', error);
       return readJSONLocal<Memory[]>('memories.json', []);
@@ -80,7 +80,7 @@ export async function getMemories(): Promise<Memory[]> {
 }
 
 export async function saveMemory(memory: Memory): Promise<void> {
-  if (USE_SUPABASE) {
+  if (USE_SUPABASE && supabase) {
     const { error } = await supabase.from(MEMORIES_TABLE).upsert(memory, { onConflict: 'id' });
     if (error) {
       console.error('Supabase error saving memory:', error);
@@ -98,7 +98,7 @@ export async function saveMemory(memory: Memory): Promise<void> {
 }
 
 export async function deleteMemory(id: string): Promise<void> {
-  if (USE_SUPABASE) {
+  if (USE_SUPABASE && supabase) {
     const { error } = await supabase.from(MEMORIES_TABLE).delete().eq('id', id);
     if (error) {
       console.error('Supabase error deleting memory:', error);
@@ -111,8 +111,8 @@ export async function deleteMemory(id: string): Promise<void> {
 
 // Documents
 export async function getDocuments(): Promise<Document[]> {
-  if (USE_SUPABASE) {
-    const { data, error } = await supabase.from(DOCUMENTS_TABLE).select('*').order('createdAt', { ascending: false });
+  if (USE_SUPABASE && supabase) {
+    const { data, error } = await supabase.from(DOCUMENTS_TABLE).select('*').order('createdat', { ascending: false });
     if (error) {
       console.error('Supabase error fetching documents:', error);
       return readJSONLocal<Document[]>('documents.json', []);
@@ -123,7 +123,7 @@ export async function getDocuments(): Promise<Document[]> {
 }
 
 export async function saveDocument(doc: Document): Promise<void> {
-  if (USE_SUPABASE) {
+  if (USE_SUPABASE && supabase) {
     const { error } = await supabase.from(DOCUMENTS_TABLE).upsert(doc, { onConflict: 'id' });
     if (error) {
       console.error('Supabase error saving document:', error);
@@ -141,7 +141,7 @@ export async function saveDocument(doc: Document): Promise<void> {
 }
 
 export async function deleteDocument(id: string): Promise<void> {
-  if (USE_SUPABASE) {
+  if (USE_SUPABASE && supabase) {
     const { error } = await supabase.from(DOCUMENTS_TABLE).delete().eq('id', id);
     if (error) {
       console.error('Supabase error deleting document:', error);
@@ -154,8 +154,8 @@ export async function deleteDocument(id: string): Promise<void> {
 
 // Tasks
 export async function getTasks(): Promise<Task[]> {
-  if (USE_SUPABASE) {
-    const { data, error } = await supabase.from(TASKS_TABLE).select('*').order('createdAt', { ascending: false });
+  if (USE_SUPABASE && supabase) {
+    const { data, error } = await supabase.from(TASKS_TABLE).select('*').order('createdat', { ascending: false });
     if (error) {
       console.error('Supabase error fetching tasks:', error);
       return readJSONLocal<Task[]>('tasks.json', []);
@@ -166,7 +166,7 @@ export async function getTasks(): Promise<Task[]> {
 }
 
 export async function saveTask(task: Task): Promise<void> {
-  if (USE_SUPABASE) {
+  if (USE_SUPABASE && supabase) {
     const { error } = await supabase.from(TASKS_TABLE).upsert(task, { onConflict: 'id' });
     if (error) {
       console.error('Supabase error saving task:', error);
@@ -184,7 +184,7 @@ export async function saveTask(task: Task): Promise<void> {
 }
 
 export async function deleteTask(id: string): Promise<void> {
-  if (USE_SUPABASE) {
+  if (USE_SUPABASE && supabase) {
     const { error } = await supabase.from(TASKS_TABLE).delete().eq('id', id);
     if (error) {
       console.error('Supabase error deleting task:', error);
@@ -195,5 +195,4 @@ export async function deleteTask(id: string): Promise<void> {
   writeJSONLocal('tasks.json', tasks);
 }
 
-// Export for OpenClaw to add session summaries
 export { supabase };
