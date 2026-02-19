@@ -1,15 +1,18 @@
 import Link from 'next/link';
 
- async function getData() {
+async function getData() {
+  const baseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL ? '' : (process.env.NEXT_PUBLIC_API_URL || '');
+  const apiUrl = baseUrl || '';
+  
   const [memoriesRes, documentsRes, tasksRes] = await Promise.all([
-    fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000'}/api/memories`, { cache: 'no-store' }),
-    fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000'}/api/documents`, { cache: 'no-store' }),
-    fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000'}/api/tasks`, { cache: 'no-store' }),
+    fetch(`${apiUrl}/api/memories`, { cache: 'no-store' }),
+    fetch(`${apiUrl}/api/documents`, { cache: 'no-store' }),
+    fetch(`${apiUrl}/api/tasks`, { cache: 'no-store' }),
   ]);
 
-  const memories = await memoriesRes.json();
-  const documents = await documentsRes.json();
-  const tasks = await tasksRes.json();
+  const memories = (await memoriesRes.json()) || [];
+  const documents = (await documentsRes.json()) || [];
+  const tasks = (await tasksRes.json()) || [];
 
   return { memories, documents, tasks };
 }
@@ -17,10 +20,10 @@ import Link from 'next/link';
 export default async function Dashboard() {
   const { memories, documents, tasks } = await getData();
 
-  const recentMemories = memories.slice(-3).reverse();
-  const pendingTasks = tasks.filter((t: any) => t.status !== 'completed').slice(0, 5);
-  const completedTasks = tasks.filter((t: any) => t.status === 'completed').length;
-  const totalTasks = tasks.length;
+  const recentMemories = (memories || []).slice(-3).reverse();
+  const pendingTasks = (tasks || []).filter((t: any) => t.status !== 'completed').slice(0, 5);
+  const completedTasks = (tasks || []).filter((t: any) => t.status === 'completed').length;
+  const totalTasks = (tasks || []).length;
 
   return (
     <div className="space-y-8">
@@ -29,11 +32,11 @@ export default async function Dashboard() {
       {/* Stats */}
       <div className="grid grid-cols-3 gap-4">
         <div className="bg-zinc-900 p-6 rounded-xl border border-zinc-800">
-          <div className="text-4xl font-bold text-white">{memories.length}</div>
+          <div className="text-4xl font-bold text-white">{(memories || []).length}</div>
           <div className="text-zinc-400 mt-2">💭 Memories</div>
         </div>
         <div className="bg-zinc-900 p-6 rounded-xl border border-zinc-800">
-          <div className="text-4xl font-bold text-white">{documents.length}</div>
+          <div className="text-4xl font-bold text-white">{(documents || []).length}</div>
           <div className="text-zinc-400 mt-2">📄 Documents</div>
         </div>
         <div className="bg-zinc-900 p-6 rounded-xl border border-zinc-800">
@@ -82,7 +85,7 @@ export default async function Dashboard() {
                     <span className={`font-medium ${
                       t.priority === 'high' ? 'text-red-400' :
                       t.priority === 'medium' ? 'text-yellow-400' : 'text-zinc-400'
-                    }`}>[{t.priority.toUpperCase()}]</span>
+                    }`}>[{t.priority?.toUpperCase()}]</span>
                     <span className="ml-2">{t.title}</span>
                   </div>
                 </div>
